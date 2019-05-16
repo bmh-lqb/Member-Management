@@ -1,0 +1,116 @@
+<%- include('./layouts/header.ejs')%>
+
+  <div class="main">
+    <%- include('./layouts/navBar.ejs')%>
+    <div class="container-fluid">
+      <div class="page-title">
+        <h1>我的个人资料</h1>
+      </div>
+      <!-- 有错误信息时展示 -->
+      <!-- <div class="alert alert-danger">
+        <strong>错误！</strong>发生XXX错误
+      </div> -->
+      <form class="form-horizontal" id="myForm">
+        <input type="hidden" value="<%= profileInfo.id%>" name="id">
+        <div class="form-group">
+          <label class="col-sm-3 control-label">头像</label>
+          <div class="col-sm-6">
+            <label class="form-image">
+              <input id="avatar" type="file">
+              <img src="<%= profileInfo.avatar%>">
+              <i class="mask fa fa-upload"></i>
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="email" class="col-sm-3 control-label">邮箱</label>
+          <div class="col-sm-6">
+            <input id="email" class="form-control" name="email" type="type" value="<%= profileInfo.email%>" placeholder="邮箱" readonly>
+            <p class="help-block">登录邮箱不允许修改</p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="slug" class="col-sm-3 control-label">别名</label>
+          <div class="col-sm-6">
+            <input id="slug" class="form-control" name="slug" type="type" value="<%= profileInfo.slug%>" placeholder="slug">
+            <p class="help-block">https://zce.me/author/<strong>zce</strong></p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="nickname" class="col-sm-3 control-label">昵称</label>
+          <div class="col-sm-6">
+            <input id="nickname" class="form-control" name="nickname" type="type" value="<%= profileInfo.nickname%>" placeholder="昵称">
+            <p class="help-block">限制在 2-16 个字符</p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="bio" class="col-sm-3 control-label">简介</label>
+          <div class="col-sm-6">
+            <textarea id="bio" class="form-control" name="bio" placeholder="Bio" cols="30" rows="6"><%= profileInfo.bio%></textarea>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="col-sm-offset-3 col-sm-6">
+            <!-- <button type="submit" id="btnUpdate" class="btn btn-primary">更新</button> -->
+            <span  id="btnUpdate" class="btn btn-primary">更新</span>
+            <a class="btn btn-link" href="password-reset.html">修改密码</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <%- include('./layouts/aside.ejs')%>
+
+  <%- include('./layouts/footer.ejs')%>
+  <script>
+    // 1. 上传图片
+    // 1.1 注册事件
+    $('#avatar').on('change',function () {
+      // alert('aaaa')
+      // 1.2 准备上传数据
+      var data = new FormData();
+
+      // 1.3 将上传图片追加到data对象中
+      data.append('avatar',this.files[0])
+
+      // 1.4 发送ajax请求
+      $.ajax({
+        type:'post',
+        url:'/uploadFile',
+        data:data,
+        contentType:false, // 不要用默认的编码方式 
+        processData:false, // ajax内部不要再进行字符串的转换了
+        dataType:'json',
+        success:function(res){
+          // console.log(res);
+          if(res&&res.code==0){
+            $('#avatar').next().attr('src',res.src)
+
+            // 需要将服务器端返回来的图片路径存在一个隐藏域中，以备更新时使用
+            $('#myForm').append("<input type='hidden' value="+res.src+" name='avatar'>")
+          }
+        }
+      })
+    })
+  
+    // 2. 更新个人中心数据
+    // 2.1 注册事件
+    $('#btnUpdate').on('click',function () {
+      
+      // 2.2 发送ajax请求
+      $.ajax({
+        type:'post',
+        url:'/updatePorfileInfo',
+        data:$('#myForm').serialize(),
+        dataType:'json',
+        success:function(res){
+          // console.log(res);
+          if(res&&res.code==0){
+            // location.href='/profile'
+            location.reload(true) // 强制刷新 ，相当于重新发请求
+          }
+        }
+      })
+    })
+  </script>

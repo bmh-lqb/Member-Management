@@ -1,0 +1,163 @@
+<%- include('./layouts/header.ejs')%>
+
+  <div class="main">
+    <%- include('./layouts/navBar.ejs')%>
+    <div class="container-fluid">
+      <div class="page-title">
+        <h1>所有评论</h1>
+      </div>
+      <!-- 有错误信息时展示 -->
+      <!-- <div class="alert alert-danger">
+        <strong>错误！</strong>发生XXX错误
+      </div> -->
+      <div class="page-action">
+        <!-- show when multiple checked -->
+        <div class="btn-batch" style="display: none">
+          <button class="btn btn-info btn-sm">批量批准</button>
+          <button class="btn btn-warning btn-sm">批量拒绝</button>
+          <button class="btn btn-danger btn-sm">批量删除</button>
+        </div>
+        <ul class="pagination pagination-sm pull-right">
+          
+        </ul>
+      </div>
+      <table class="table table-striped table-bordered table-hover">
+        <thead>
+          <tr>
+            <th class="text-center" width="40"><input type="checkbox"></th>
+            <th>作者</th>
+            <th>评论</th>
+            <th>评论在</th>
+            <th>提交于</th>
+            <th>状态</th>
+            <th class="text-center" width="100">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+          
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <%- include('./layouts/aside.ejs')%>
+
+  <%- include('./layouts/footer.ejs')%>
+  <script src="/assets/vendors/twbs-pagination/jquery.twbsPagination.js"></script>
+  <script type="text/template" id="commentsListTmp">
+    {{each data as val key}}
+      <tr class="danger">
+        <td class="text-center">{{val.id}}</td>
+        <td>{{val.author}}</td>
+        <td>{{val.content.length>20?val.content.slice(0,10)+"...":val.content}}</td>
+        <td>{{val.title}}</td>
+        <td>{{val.created}}</td>
+        {{if val.status=='held'}}
+          <td>未批准/待审核</td>
+        {{else if val.status =='approved'}}
+          <td>已批准</td>
+        {{else if val.status=='rejected'}}
+          <td>拒绝</td>
+        {{else}}
+          <td>回收站</td>
+        {{/if}}
+        <td class="text-center">
+          <a href="javascript:;" data-id="{{val.id}}" class="btnOK btn btn-info btn-xs">批准</a>
+          <a href="javascript:;" data-id="{{val.id}}" class="btnDel btn btn-danger btn-xs">删除</a>
+        </td>
+      </tr>
+    {{/each}}
+  </script>
+<script>
+  var currentPage = 1;
+  // 1. 发送ajax请求,获取页面数据
+  $.ajax({
+    type:'get',
+    url:'/getCommentsData',
+    dataType:'json',
+    success:function(res){
+      // 成功之后要渲染页面
+      console.log(res);
+      if(res&&res.code==0){
+        var htmlStr = template('commentsListTmp',res)
+        $('tbody').html(htmlStr)
+
+        // 启用分页
+        pagination(res.totalPages)
+      }
+    }
+  
+  })
+
+  function pagination(totalPages){
+    // 2. 启用分页
+    $('.pagination').twbsPagination({
+      totalPages: totalPages,
+      visiblePages: 7,
+      onPageClick: function (event, page) {
+        renderPageData(page)
+
+        currentPage = page;
+      }
+    });
+  }
+
+  function renderPageData(page){
+    $.ajax({
+      type:'get',
+      url:'/getCommentsDataByPage',
+      data:{
+        page:page
+      },
+      dataType:'json',
+      success:function(res){
+        // 根据返回来的数据渲染页面
+        var htmlStr = template('commentsListTmp', res)
+        $('tbody').html(htmlStr)
+      }
+    })
+  }
+
+  // 2.  删除评论
+  // 2.1  使用委托的方式注册事件
+ $('tbody').on('click','.btnDel',function () {
+   
+  // 2.2  发送 ajax请求
+  $.ajax({
+    type:'get',
+    url:'/delCommentsInfo',
+    data:{
+      id:$(this).attr('data-id')
+    },
+    dataType:'json',
+    success:function(res){
+      console.log(res);
+      if(res&&res.code==0){
+        // 继续渲染当前页码中的评论
+        renderPageData(currentPage)
+      }
+    }
+  })
+ })
+
+ // 3. 批准发布评论
+ // 3.1 使用委托注册事件
+ $('tbody').on('click','.btnOK',function () {
+   
+  // 3.2 发送ajax请求
+  $.ajax({
+    type:'get',
+    url:'/updateCommentsStatus',
+    data:{
+      id:$(this).attr('data-id')
+    },
+    success:function(res){
+      if(res&&res.code==0){
+        renderPageData(currentPage) // 重新更新当前页面的数据
+      }
+      
+    }
+  })
+ })
+</script>

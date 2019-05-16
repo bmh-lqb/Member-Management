@@ -1,0 +1,155 @@
+<%- include('./layouts/header.ejs')%>
+  <div class="main">
+    <%- include('./layouts/navBar.ejs')%>
+    <div class="container-fluid">
+      <div class="page-title">
+        <h1>所有文章</h1>
+        <a href="post-add.html" class="btn btn-primary btn-xs">写文章</a>
+      </div>
+      <!-- 有错误信息时展示 -->
+      <!-- <div class="alert alert-danger">
+        <strong>错误！</strong>发生XXX错误
+      </div> -->
+      <div class="page-action">
+        <!-- show when multiple checked -->
+        <a class="btn btn-danger btn-sm" href="javascript:;" style="display: none">批量删除</a>
+        <form class="form-inline">
+          <select name="" class="form-control input-sm">
+            <option value="">所有分类</option>
+            <option value="">未分类</option>
+          </select>
+          <select name="" class="form-control input-sm">
+            <option value="">所有状态</option>
+            <option value="">草稿</option>
+            <option value="">已发布</option>
+          </select>
+          <button class="btn btn-default btn-sm">筛选</button>
+        </form>
+        <ul class="pagination pagination-sm pull-right">
+         
+        </ul>
+      </div>
+      <table class="table table-striped table-bordered table-hover">
+        <thead>
+          <tr>
+            <th class="text-center" width="40"><input type="checkbox"></th>
+            <th>标题</th>
+            <th>作者</th>
+            <th>分类</th>
+            <th class="text-center">发表时间</th>
+            <th class="text-center">状态</th>
+            <th class="text-center" width="100">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          
+          
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <%- include('./layouts/aside.ejs')%>
+
+  <%- include('./layouts/footer.ejs')%>
+  <script src="/assets/vendors/twbs-pagination/jquery.twbsPagination.js"></script>
+  <script type="text/template" id="postsListTmp">
+    {{each posts as val key}}
+      <tr>
+        <td class="text-center">{{val.id}}</td>
+        <td>{{val.title}}</td>
+        <td>{{val.nickname}}</td>
+        <td>{{val.name}}</td>
+        <td class="text-center">{{val.created}}</td>
+        {{if val.status=='published'}}
+          <td class="text-center">已发布</td>
+        {{else if val.status=='drafted'}}
+          <td class="text-center">草稿</td>
+        {{else }}
+         <td class="text-center">回收站</td>
+         {{/if}}
+        <td class="text-center">
+          <a href="/postsEdit?id={{val.id}}"  class="btnEdit btn btn-default btn-xs">编辑</a>
+          <a href="javascript:;" data-id="{{val.id}}" class="btnDel btn btn-danger btn-xs">删除</a>
+        </td>
+      </tr>
+    {{/each}}
+  </script>
+  <script>
+    var totalPages = 0;
+    var currentPage = 1;
+    // 1. 发送请求,获取渲染页面的数据
+    $.ajax({
+      type:'get',
+      url:'/getPostsData',
+      dataType:'json',
+      success:function(res){
+        console.log(res);
+        // 使用art-template来渲染页面
+        var htmlStr = template('postsListTmp',res)
+        $('tbody').html(htmlStr)
+
+        // totalPages = res.totalCount;
+        pagination(res.totalCount)
+      }
+    })
+    
+    // 将分页功能封装在一个函数当中
+    function pagination(totalPages){
+      // 2. 启用分页插件
+      $('.pagination').twbsPagination({
+        totalPages: totalPages, // 总页数
+        visiblePages: 9, // 当前能够显示的页码条数
+        first: '第一页',
+        prev: '上一页',
+        next: '下一页',
+        last: '最后一页',
+        initiateStartPageClick: false,// 默认一开始加载的时候，不要打印页码数
+        onPageClick: function (event, page) {
+          //  console.log(page); //  获取的就是当前的页码数
+          renderPosts(page);
+          currentPage = page;
+        }
+      });
+    }
+    
+
+   // 2. 删除文章
+   // 2.1 使用委托注册事件
+   $('tbody').on('click','.btnDel',function () {
+    //  alert(100)
+    // 2.2 发送ajax请求
+    $.ajax({
+      type:'get',
+      url:'delPostsById',
+      data:{
+        id:$(this).attr('data-id')
+      },
+      dataType:'json',
+      success:function(res){
+        // console.log(res);
+        if(res&&res.code==0){
+          // 重新发送请求，来获取当前页下面的文章数据
+          renderPosts(currentPage); // 再去查询当前页面的数据
+        }
+      }
+    })
+   })
+    
+   // 封装了一个渲染当前页码中的文章数据的函数
+   function renderPosts(page){
+      $.ajax({
+       type: 'get',
+       url: '/getPostsDataByPage',
+       data: {
+         page: page
+       },
+       dataType: 'json',
+       success: function (res) {
+         // 重新渲染页面
+         var htmlStr = template('postsListTmp', res)
+         $('tbody').html(htmlStr)
+       }
+     })
+   }
+  </script>

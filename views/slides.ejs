@@ -1,0 +1,165 @@
+<%- include('./layouts/header.ejs')%>
+
+  <div class="main">
+    <%- include('./layouts/navBar.ejs')%>
+    <div class="container-fluid">
+      <div class="page-title">
+        <h1>图片轮播</h1>
+      </div>
+      <!-- 有错误信息时展示 -->
+      <!-- <div class="alert alert-danger">
+        <strong>错误！</strong>发生XXX错误
+      </div> -->
+      <div class="row">
+        <div class="col-md-4">
+          <form id="myForm">
+            <h2>添加新轮播内容</h2>
+            <div class="form-group">
+              <label for="image">图片</label>
+              <!-- show when image chose -->
+              <img class="help-block thumbnail" style="display: none">
+              <input id="image" class="form-control" name="image" type="file">
+            </div>
+            <div class="form-group">
+              <label for="text">文本</label>
+              <input id="text" class="form-control" name="text" type="text" placeholder="文本">
+            </div>
+            <div class="form-group">
+              <label for="link">链接</label>
+              <input id="link" class="form-control" name="link" type="text" placeholder="链接">
+            </div>
+            <div class="form-group">
+              <!-- <button class="btn btn-primary" type="submit">添加</button> -->
+              <span class="btn btn-primary" id="btnAdd" >添加</span>
+            </div>
+          </form>
+        </div>
+        <div class="col-md-8">
+          <div class="page-action">
+            <!-- show when multiple checked -->
+            <a class="btn btn-danger btn-sm" href="javascript:;" style="display: none">批量删除</a>
+          </div>
+          <table class="table table-striped table-bordered table-hover">
+            <thead>
+              <tr>
+                <th class="text-center" width="40"><input type="checkbox"></th>
+                <th class="text-center">图片</th>
+                <th>文本</th>
+                <th>链接</th>
+                <th class="text-center" width="100">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              
+              
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <%- include('./layouts/aside.ejs')%>
+
+  <%- include('./layouts/footer.ejs')%>
+  <script type="text/template" id="slidesListTmp">
+    {{each data as val key}}
+      <tr>
+        <td class="text-center"><input type="checkbox"></td>
+        <td class="text-center"><img class="slide" src="{{val.image}}"></td>
+        <td>{{val.text}}</td>
+        <td>{{val.link}}</td>
+        <td class="text-center">
+          <a href="javascript:;" data-id="{{key}}"  class="btnDel btn btn-danger btn-xs">删除</a>
+        </td>
+      </tr>
+    {{/each}}
+  </script>
+  <script>
+    // 1. 发送ajax请求,获取数据
+    $.ajax({
+      type:'get',
+      url:'/getSlidesData',
+      dataType:'json',
+      success:function(res){
+        console.log(res);
+        if(res&&res.code==0){
+          var htmlStr = template('slidesListTmp',res)
+          $('tbody').html(htmlStr)
+        }
+      }
+    })
+  
+    // 2. 上传图片
+    // 2.1 注册事件
+    $('#image').on('change',function () {
+      
+      // 2.2 准备FormData对象
+      var data = new FormData()
+      data.append('image',this.files[0])
+
+      // 2.3 发送ajax请求
+      $.ajax({
+        type:'post',
+        url:'/uploadFileOfSlides',
+        data:data,
+        contentType:false, // 不要用原来的编码方式
+        processData:false, // 不要在内部进行字符串的转换
+        dataType:'json',
+        success:function(res){
+          if(res&&res.code==0){
+            // 显示在页面上
+            $('.thumbnail').show().attr('src',res.src)
+            .after("<input type='hidden' value="+res.src+" name='image'>")
+          }
+        }
+      })
+    })
+  
+    // 3. 添加轮播项
+    // 3.1 给按钮注册事件
+    $('#btnAdd').on('click',function(){
+      
+      // 3.2 发送ajax请求
+      $.ajax({
+        type:'post',
+        url:'/addNewSlide',
+        data:$('#myForm').serialize(),
+        dataType:'json',
+        success:function(res){
+          console.log(res);
+          // 重新渲染右侧列表
+          if(res&&res.code==0){
+            var htmlStr = template('slidesListTmp', res)
+            $('tbody').html(htmlStr)
+
+            // 清空页面中的显示图片和删除隐藏域
+            $('#myForm input[type=text]').val('') // 将页面中添加的内容清空
+            $('input[type=hidden]').remove() // 将隐藏域删除掉
+          } 
+        }
+      })
+    })
+    
+    // 4. 删除轮播项
+    // 4.1 注册事件
+    $('tbody').on('click','.btnDel',function(){
+
+      // 4.2 发送ajax请求
+      $.ajax({
+        type:'get',
+        url:'/delSlideInfo',
+        data:{
+          index:$(this).attr('data-id')
+        },
+        dataType:'json',
+        success:function(res){
+          if(res&&res.code==0){
+            // 重新渲染页面
+            var htmlStr = template('slidesListTmp',res)
+            $('tbody').html(htmlStr);
+          }
+        }
+      })
+    })
+  </script>

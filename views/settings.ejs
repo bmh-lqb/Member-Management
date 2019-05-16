@@ -1,0 +1,116 @@
+<%- include('./layouts/header.ejs')%>
+
+  <div class="main">
+    <%- include('./layouts/navBar.ejs')%>
+    <div class="container-fluid">
+      <div class="page-title">
+        <h1>网站设置</h1>
+      </div>
+      <!-- 有错误信息时展示 -->
+      <!-- <div class="alert alert-danger">
+        <strong>错误！</strong>发生XXX错误
+      </div> -->
+      <form class="form-horizontal" id="myForm">
+        <div class="form-group">
+          <label for="site_logo" class="col-sm-2 control-label">网站图标</label>
+          <div class="col-sm-6">
+            <input id="site_logo" name="site_logo" type="hidden">
+            <label class="form-image">
+              <input id="logo" type="file" name="site_logo">
+              <img src="<%= settings[1].value%>">
+              <i class="mask fa fa-upload"></i>
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="site_name" class="col-sm-2 control-label">站点名称</label>
+          <div class="col-sm-6">
+            <input id="site_name" name="site_name" value="<%= settings[2].value%>" class="form-control" type="type" placeholder="站点名称">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="site_description" class="col-sm-2 control-label">站点描述</label>
+          <div class="col-sm-6">
+            <textarea id="site_description" name="site_description" class="form-control" placeholder="站点描述" cols="30" rows="6">
+            <%= settings[3].value%></textarea>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="site_keywords" class="col-sm-2 control-label">站点关键词</label>
+          <div class="col-sm-6">
+            <input id="site_keywords" name="site_keywords" value="<%= settings[4].value%>" class="form-control" type="type" placeholder="站点关键词">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="col-sm-2 control-label">评论</label>
+          <div class="col-sm-6">
+            <div class="checkbox">
+              <label><input id="comment_status" name="comment_status" type="checkbox" <% if(settings[6].value==1){%> checked <%}%> >开启评论功能</label>
+            </div>
+            <div class="checkbox">
+              <label><input id="comment_reviewed" name="comment_reviewed" type="checkbox" <% if(settings[7].value==1){%> checked <%}%> >评论必须经人工批准</label>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="col-sm-offset-2 col-sm-6">
+            <!-- <button type="submit" id="btnSave" class="btn btn-primary">保存设置</button> -->
+            <span type="submit" id="btnSave" class="btn btn-primary">保存设置</span>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <%- include('./layouts/aside.ejs')%>
+
+  <%- include('./layouts/footer.ejs')%>
+  <script>
+    // 上传图片
+    // 1. 注册事件
+    $('#logo').on('change',function(){
+
+      // 2. 准备数据
+      var data = new FormData()
+      data.append('site_logo',this.files[0])
+
+      // 3. 发送ajax请求
+      $.ajax({
+        type:'post',
+        url:'/uploadFileOfSettings',
+        data:data,
+        contentType:false,
+        processData:false,
+        success:function(res){
+          console.log(res);
+          if(res&&res.code==0){
+            // 图片上传成功后将图片显示在当前页面上
+            $('#logo').next().attr('src',res.src)
+
+            // 还要将图片在服务器端的路径存储到页面的隐藏域中,以备上传之用
+            $('#site_logo').val(res.src)
+          }
+        }
+      })
+    })
+
+    // 保存设置
+    // 1. 给保存按钮注册事件
+    $('#btnSave').on('click',function(){
+
+      // 2.发送ajax请求
+      $.ajax({
+        type:'post',
+        url:'/updateSettingsInfo',
+        data:$('#myForm').serialize(),
+        success:function(res){
+          if(res&&res.code==0){
+            location.href='/settings' // 重新刷新当前页面
+          }
+        }
+      })
+    })
+  </script> 
+
+
+  
