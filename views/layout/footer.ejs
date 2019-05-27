@@ -4,3 +4,23 @@
 <script>NProgress.done()</script>
 </body>
 </html>
+<script>
+    // 给退出按钮绑定一个点击事件：
+    $('#loginOut').click(function(event){
+        // 阻止默认行为
+        event.preventDefault();
+
+        // 发送退出请求：去服务器清除 session
+        $.ajax({
+            url: '/loginOut',
+            method: 'GET',
+            success: function(res) {
+                if (res.status === 200) {
+                    alert(res.msg);
+                    // 退出成功后要跳转到 login
+                    window.location = '/login';
+                }
+            }
+        })
+    })
+</script>
